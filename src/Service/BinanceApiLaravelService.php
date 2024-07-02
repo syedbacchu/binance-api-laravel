@@ -3,37 +3,30 @@
 namespace Sdtech\BinanceApiLaravel\Service;
 
 
-/*
 
-*/
-
-class BinanceApiLaravelService
-
+class BinanceApiLaravelService extends BinanceApiService
 {
 
-    private $imgManager;
+    private $publicApi;
+
     public function __construct()
     {
-        
+        $this->publicApi = new PublicApiService();
     }
 
     public function testing(){
-        return 'ok google';
+        return 'ok testing';
     }
 
-
-    private function is_setup() {
-        return true;
-    }
-
-    private function sendResponse($status,$message = "",$data = [])
+    public function _price(string $symbol)
     {
-        return [
-            'success' => $status,
-            'message' => $message ? $message : 'Something went wrong',
-            'data' => $data
-        ];
+        return $this->publicApi->price($symbol);
     }
 
+    public function _prices()
+    {
+        $ser =  new PublicApiService();
+        return $this->publicApi->prices();
+    }
 
 }
