@@ -38,9 +38,6 @@ class BinanceApiLaravelServiceProviders extends ServiceProvider
      */
     public function register()
     {
-        $this->app->singleton("BinanceApiLaravelService",function ($app) {
-            return new BinanceApiLaravelService();
-        });
     }
 
     /**

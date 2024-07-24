@@ -30,12 +30,6 @@
     "config": {
         "sort-packages": true
     },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "Sdtech\\BinanceApiLaravel\\Providers\\BinanceApiLaravelServiceProviders"
-            ]
-        }
-    },
+    
     "prefer-stable": true
 }
