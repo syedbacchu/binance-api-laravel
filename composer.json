@@ -3,7 +3,7 @@
     "description": "Integrate Binance API with Laravel Effortlessly",
     "type": "library",
     "license": "MIT",
-    
+
     "authors": [
         {
             "name": "sd bacchu",
@@ -22,10 +22,7 @@
     "autoload": {
         "psr-4": {
             "Sdtech\\BinanceApiLaravel\\": "src/"
-        },
-        "files": [
-            "src/Service/BinanceApiLaravelService.php"
-        ]
+        }
     },
     "require": {
         "php": ">=7.0.0"
@@ -36,7 +33,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "SdTech\\BinanceApiLaravel\\Providers\\BinanceApiLaravelServiceProviders"
+                "Sdtech\\BinanceApiLaravel\\Providers\\BinanceApiLaravelServiceProviders"
             ]
         }
     },

@@ -2,6 +2,7 @@
 
 namespace Sdtech\BinanceApiLaravel\Service;
 
+use Illuminate\Support\Facades\Log;
 
 /*
 
@@ -56,18 +57,21 @@ class ApiService
     {
         $this->api_key = config('binanceapilaravel.BINANCE_API_KEY');
         $this->api_secret = config('binanceapilaravel.BINANCE_API_SECRET_KEY');
-        $this->useTestnet = config('binanceapilaravel.BINANCE_API_TEST_MODE');
+        $this->useTestnet = config('binanceapilaravel.BINANCE_API_TEST_MODE') ? config('binanceapilaravel.BINANCE_API_TEST_MODE') : false;
 
-        $this->base = config('binanceapilaravel.BINANCE_API_LIVE_URL');
-        $this->baseTestnet = config('binanceapilaravel.BINANCE_API_TESTNET_URL');
-        $this->wapi = config('binanceapilaravel.BINANCE_WAPI_URL');
-        $this->sapi = config('binanceapilaravel.BINANCE_SAPI_URL');
-        $this->fapi = config('binanceapilaravel.BINANCE_FAPI_URL');
-        $this->bapi = config('binanceapilaravel.BINANCE_BAPI_URL');
-        $this->stream = config('binanceapilaravel.BINANCE_WSS_STREAM_URL');
-        $this->streamTestnet = config('binanceapilaravel.BINANCE_WSS_STREAM_TESTNET_URL');
+        $this->base = config('binanceapilaravel.BINANCE_API_LIVE_URL') ? config('binanceapilaravel.BINANCE_API_LIVE_URL') : "https://api.binance.com/api/";
+        $this->baseTestnet = config('binanceapilaravel.BINANCE_API_TESTNET_URL') ? config('binanceapilaravel.BINANCE_API_TESTNET_URL') : "https://testnet.binance.vision/api/";
+        $this->wapi = config('binanceapilaravel.BINANCE_WAPI_URL') ? config('binanceapilaravel.BINANCE_WAPI_URL') : "https://api.binance.com/wapi/";
+        $this->sapi = config('binanceapilaravel.BINANCE_SAPI_URL') ? config('binanceapilaravel.BINANCE_SAPI_URL') : "https://api.binance.com/sapi/";
+        $this->fapi = config('binanceapilaravel.BINANCE_FAPI_URL') ? config('binanceapilaravel.BINANCE_FAPI_URL') : "https://fapi.binance.com/";
+        $this->bapi = config('binanceapilaravel.BINANCE_BAPI_URL') ? config('binanceapilaravel.BINANCE_BAPI_URL') : "https://www.binance.com/bapi/";
+        $this->stream = config('binanceapilaravel.BINANCE_WSS_STREAM_URL') ? config('binanceapilaravel.BINANCE_WSS_STREAM_URL') : "wss://stream.binance.com:9443/ws/";
+        $this->streamTestnet = config('binanceapilaravel.BINANCE_WSS_STREAM_TESTNET_URL') ? config('binanceapilaravel.BINANCE_WSS_STREAM_TESTNET_URL') : "wss://testnet.binance.vision/ws/";
     }
 
+    private function signature($query_string, $secret) {
+        return hash_hmac('sha256', $query_string, $secret);
+    }
     /**
      * httpRequest curl wrapper for all http api requests.
      * You can't call this function directly, use the helper functions
@@ -98,12 +102,13 @@ class ApiService
         }
 
         $curl = curl_init();
-        curl_setopt($curl, CURLOPT_VERBOSE, $this->httpDebug);
+        curl_setopt($curl, CURLOPT_VERBOSE, true); // Enable verbose output
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification for testing
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false); // Disable SSL verification for testing
+        curl_setopt($curl, CURLOPT_CERTINFO, true);
         $query = http_build_query($params, '', '&');
 
-        // signed with params
         if ($signed === true) {
-
             if (empty($this->api_key)) {
                 throw new \Exception("signedRequest error: API Key not set!");
             }
@@ -133,12 +138,14 @@ class ApiService
             }
 
             $query = http_build_query($params, '', '&');
-            $query = str_replace([ '%40' ], [ '@' ], $query);//if send data type "e-mail" then binance return: [Signature for this request is not valid.]
-            $signature = hash_hmac('sha256', $query, $this->api_secret);
+            $query = str_replace(['%40'], ['@'], $query); // Replace %40 with @
+
+            $signature = $this->signature($query, $this->api_secret);
             if ($method === "POST") {
                 $endpoint = $base . $url;
-                $params['signature'] = $signature; // signature needs to be inside BODY
-                $query = http_build_query($params, '', '&'); // rebuilding query
+                $params['signature'] = $signature; // Signature needs to be inside BODY
+                $query = http_build_query($params, '', '&'); // Rebuild query
+                $endpoint = $endpoint . '?' . $query;
             } else {
                 $endpoint = $base . $url . '?' . $query . '&signature=' . $signature;
             }
@@ -147,35 +154,26 @@ class ApiService
             curl_setopt($curl, CURLOPT_HTTPHEADER, array(
                 'X-MBX-APIKEY: ' . $this->api_key,
             ));
-        }
-        // params so buildquery string and append to url
-        elseif (count($params) > 0) {
+        } elseif (count($params) > 0) {
             curl_setopt($curl, CURLOPT_URL, $this->getRestEndpoint() . $url . '?' . $query);
-        }
-        // no params so just the base url
-        else {
+        } else {
             curl_setopt($curl, CURLOPT_URL, $this->getRestEndpoint() . $url);
             curl_setopt($curl, CURLOPT_HTTPHEADER, array(
                 'X-MBX-APIKEY: ' . $this->api_key,
             ));
         }
         curl_setopt($curl, CURLOPT_USERAGENT, "User-Agent: Mozilla/4.0 (compatible; PHP Binance API)");
-        // Post and postfields
+
         if ($method === "POST") {
             curl_setopt($curl, CURLOPT_POST, true);
             curl_setopt($curl, CURLOPT_POSTFIELDS, $query);
         }
-        // Delete Method
         if ($method === "DELETE") {
             curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method);
         }
-
-        // PUT Method
         if ($method === "PUT") {
             curl_setopt($curl, CURLOPT_PUT, true);
         }
-
-        // proxy settings
         if (is_array($this->proxyConf)) {
             curl_setopt($curl, CURLOPT_PROXY, $this->getProxyUriString());
             if (isset($this->proxyConf['user']) && isset($this->proxyConf['pass'])) {
@@ -187,7 +185,6 @@ class ApiService
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_TIMEOUT, 60);
 
-        // set user defined curl opts last for overriding
         foreach ($this->curlOpts as $key => $value) {
             curl_setopt($curl, constant($key), $value);
         }
@@ -197,23 +194,18 @@ class ApiService
                 $this->downloadCurlCaBundle();
             }
         }
-
         $output = curl_exec($curl);
-        // Check if any error occurred
         if (curl_errno($curl) > 0) {
-            // should always output error, not only on httpdebug
-            // not outputing errors, hides it from users and ends up with tickets on github
             throw new \Exception('Curl error: ' . curl_error($curl));
         }
 
         $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
         $header = $this->get_headers_from_curl_response($output);
         $output = substr($output, $header_size);
-
         curl_close($curl);
 
         $json = json_decode($output, true);
-
+// dd($curl,$json);
         $this->lastRequest = [
             'url' => $url,
             'method' => $method,
@@ -231,16 +223,15 @@ class ApiService
         }
 
         if (isset($json['msg']) && !empty($json['msg'])) {
-            if ( $url != 'v1/system/status' && $url != 'v3/systemStatus.html' && $url != 'v3/accountStatus.html') {
-                // should always output error, not only on httpdebug
-                // not outputing errors, hides it from users and ends up with tickets on github
-                throw new \Exception('signedRequest error: '.print_r($output, true));
+            if ($url != 'v1/system/status' && $url != 'v3/systemStatus.html' && $url != 'v3/accountStatus.html') {
+                throw new \Exception('signedRequest error: ' . print_r($output, true));
             }
         }
         $this->transfered += strlen($output);
         $this->requestCount++;
         return $json;
     }
+
 
     protected function setXMbxUsedWeight(int $usedWeight) : void
     {
@@ -276,8 +267,8 @@ class ApiService
         curl_setopt($curl, CURLOPT_VERBOSE, 0);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_HEADER, 0);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
 
         // proxy settings
         if (is_array($this->proxyConf)) {
@@ -372,7 +363,44 @@ class ApiService
         return $headers;
     }
 
+    public function getWsEndpoint() : string
+    {
+        return $this->useTestnet ? $this->streamTestnet : $this->stream;
+    }
 
+
+    /*
+     * WebSockets
+     */
+
+    /**
+     * depthHandler For WebSocket Depth Cache
+     *
+     * $this->depthHandler($json);
+     *
+     * @param $json array of depth bids and asks
+     * @return null
+     */
+    public function depthHandler(array $json)
+    {
+        $symbol = $json['s'];
+        if ($json['u'] <= $this->info[$symbol]['firstUpdate']) {
+            return;
+        }
+
+        foreach ($json['b'] as $bid) {
+            $this->depthCache[$symbol]['bids'][$bid[0]] = $bid[1];
+            if ($bid[1] == "0.00000000") {
+                unset($this->depthCache[$symbol]['bids'][$bid[0]]);
+            }
+        }
+        foreach ($json['a'] as $ask) {
+            $this->depthCache[$symbol]['asks'][$ask[0]] = $ask[1];
+            if ($ask[1] == "0.00000000") {
+                unset($this->depthCache[$symbol]['asks'][$ask[0]]);
+            }
+        }
+    }
 
     private function is_setup() {
         return (!empty($this->api_key) || !empty($this->api_secret));
