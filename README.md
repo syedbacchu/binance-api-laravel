@@ -90,8 +90,7 @@ $price = $api->price( "BNBUSDT" );
 @param STRING symbols optional Examples of accepted format for the symbols parameter: ["BTCUSDT","BNBUSDT"]
 @return array with error message or array with symbol price
 @throws \Exception
-```    
 
-```php   
 price(string $symbol='BNBUSDT', $symbols=[]) 
-```
+
+```    
