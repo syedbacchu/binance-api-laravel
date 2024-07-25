@@ -2,10 +2,7 @@
 
 
 namespace Sdtech\BinanceApiLaravel\Providers;
-
-
 use Illuminate\Support\ServiceProvider;
-use Sdtech\BinanceApiLaravel\Service\BinanceApiLaravelService;
 
 class BinanceApiLaravelServiceProviders extends ServiceProvider
 {

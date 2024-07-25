@@ -32,7 +32,14 @@ The current features are :
 ```bash
 composer require sdtech/binance-api-laravel
 ```
-2. Publish the packages views, config file, assets, and language files by running the following from your projects root folder:
+2. In config/app.php, need to add this line:
+```php
+'providers' => [
+    // Other Service Providers...
+    Sdtech\BinanceApiLaravel\Providers\BinanceApiLaravelServiceProviders::class,
+],
+```
+3. Publish the packages views, config file, assets, and language files by running the following from your projects root folder:
 
 ```bash
 php artisan vendor:publish --tag=binanceapilaravel
@@ -57,4 +64,34 @@ php artisan vendor:publish --tag=binanceapilaravel
 ```
 
 ## Uses
-5. We provide a sample code of functionality that will help you to integrate easily
+4. We provide a sample code of functionality that will help you to integrate easily
+```php
+
+use Sdtech\BinanceApiLaravel\Service\BinanceApiLaravelService;
+
+class HomeController extends Controller
+{
+    public function testBinanceApi(Request $request) {
+
+        $api = new BinanceApiLaravelService();
+        $response = $api->price('BNBUSDT'); // get the current BNB price in USDT
+        $response2 = $api->orderBook('BNBUSDT',100);  // get the order book data
+        return $response;
+    }
+}
+ in the same way you can use other function as well
+```
+
+## some functions
+- price get the latest price of a symbol
+```php
+$price = $api->price( "BNBUSDT" );
+@param STRING symbol mandetory Parameter symbol and symbols cannot be used in combination.
+@param STRING symbols optional Examples of accepted format for the symbols parameter: ["BTCUSDT","BNBUSDT"]
+@return array with error message or array with symbol price
+@throws \Exception
+```    
+
+```php   
+price(string $symbol='BNBUSDT', $symbols=[]) 
+```

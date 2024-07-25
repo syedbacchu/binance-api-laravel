@@ -22,7 +22,10 @@
     "autoload": {
         "psr-4": {
             "Sdtech\\BinanceApiLaravel\\": "src/"
-        }
+        },
+        "files": [
+            "src/Service/BinanceApiLaravelService.php"
+        ]
     },
     "require": {
         "php": ">=7.0.0"
