@@ -94,3 +94,11 @@ $price = $api->price( "BNBUSDT" );
 price(string $symbol='BNBUSDT', $symbols=[]) 
 
 ```    
+
+- get exchange information
+```php
+ping() // test connectivity
+time() // check server time
+$symbol = "BNBUSDT";
+exchangeInfo($symbol)  // get exchange info
+```
