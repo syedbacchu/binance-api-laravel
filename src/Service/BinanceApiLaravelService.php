@@ -22,10 +22,6 @@ class BinanceApiLaravelService extends BinanceApiService
         $this->spotTradeApi = new SpotTradeApiService();
     }
 
-    public function testing(){
-        return 'ok testing';
-    }
-
 
     /*** binance spot api start ***/
 
